@@ -2,7 +2,7 @@ use crate::util::{add_no_canonicalize_trashing_input, branch_hint, split, sqrt_t
 use crate::util::{assume, try_inverse_u64};
 use core::iter::{Product, Sum};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use ff::{Field, PrimeField};
+use ff::{Field, FromUniformBytes, PrimeField};
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
@@ -31,6 +31,19 @@ impl Display for Goldilocks {
 pub const MODULUS: u64 = 0xffffffff00000001;
 /// 2^32 - 1
 pub const EPSILON: u64 = 0xffffffff;
+
+impl FromUniformBytes<64> for Goldilocks {
+    fn from_uniform_bytes(bytes: &[u8; 64]) -> Self {
+        <Self as FromUniformBytes<32>>::from_uniform_bytes(bytes[0..32].try_into().unwrap())
+    }
+}
+
+impl FromUniformBytes<32> for Goldilocks {
+    fn from_uniform_bytes(bytes: &[u8; 32]) -> Self {
+        // FIXME: this is biased.
+        Goldilocks(u64::from_le_bytes(bytes[..8].try_into().unwrap()))
+    }
+}
 
 impl Field for Goldilocks {
     /// The zero element of the field, the additive identity.

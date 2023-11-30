@@ -8,16 +8,15 @@ use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-/// Degree 3 Goldilocks extension field mod x^2 - 7 
+/// Degree 3 Goldilocks extension field mod x^2 - 7
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GoldilocksExt2(pub [Goldilocks; 2]);
 
 /// For a = (a1, a2) and b = (b1, b2)
 /// The multiplication is define as
 /// c := a * b = a(x) * b(x) % (x^2 - 7)
-///    = x*a2*b1 + x*a1*b2 
+///    = x*a2*b1 + x*a1*b2
 ///    + a1*b1 + 7*a2*b2
-
 
 /// This requires 9 multiplications and 6 1 additions
 fn mul_internal(a: &GoldilocksExt2, b: &GoldilocksExt2) -> GoldilocksExt2 {

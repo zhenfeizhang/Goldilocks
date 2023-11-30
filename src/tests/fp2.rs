@@ -13,6 +13,6 @@ fn test_field() {
 fn known_answer_tests() {
     let a = GoldilocksExt2([Goldilocks::from(1), Goldilocks::from(2)]);
     let b = GoldilocksExt2([Goldilocks::from(3), Goldilocks::from(4)]);
-    let c = GoldilocksExt2([-Goldilocks::from(5), Goldilocks::from(10)]);
+    let c = GoldilocksExt2([Goldilocks::from(59), Goldilocks::from(10)]);
     assert_eq!(a * b, c)
 }

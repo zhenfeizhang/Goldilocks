@@ -31,11 +31,13 @@ fn mul_internal(a: &GoldilocksExt2, b: &GoldilocksExt2) -> GoldilocksExt2 {
     GoldilocksExt2([c1, c2])
 }
 
-impl GoldilocksExt2 {
-    fn to_canonical_u64_array(&self) -> [u64; 2] {
-        [self.0[0].to_canonical_u64(), self.0[1].to_canonical_u64()]
-    }
-}
+impl_extension_field!(Goldilocks, GoldilocksExt2, 2);
+
+// impl GoldilocksExt2 {
+//     fn to_canonical_u64_array(&self) -> [u64; 2] {
+//         [self.0[0].to_canonical_u64(), self.0[1].to_canonical_u64()]
+//     }
+// }
 
 impl Field for GoldilocksExt2 {
     /// The zero element of the field, the additive identity.
@@ -115,12 +117,12 @@ impl ConditionallySelectable for GoldilocksExt2 {
     }
 }
 
-impl ConstantTimeEq for GoldilocksExt2 {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.to_canonical_u64_array()
-            .ct_eq(&other.to_canonical_u64_array())
-    }
-}
+// impl ConstantTimeEq for GoldilocksExt2 {
+//     fn ct_eq(&self, other: &Self) -> Choice {
+//         self.to_canonical_u64_array()
+//             .ct_eq(&other.to_canonical_u64_array())
+//     }
+// }
 impl Neg for GoldilocksExt2 {
     type Output = Self;
 
@@ -139,102 +141,12 @@ impl Add for GoldilocksExt2 {
     }
 }
 
-impl<'a> Add<&'a GoldilocksExt2> for GoldilocksExt2 {
-    type Output = Self;
-
-    #[inline]
-    fn add(self, rhs: &'a GoldilocksExt2) -> Self::Output {
-        self + *rhs
-    }
-}
-
-impl AddAssign for GoldilocksExt2 {
-    #[inline]
-    fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs;
-    }
-}
-
-impl<'a> AddAssign<&'a GoldilocksExt2> for GoldilocksExt2 {
-    #[inline]
-    fn add_assign(&mut self, rhs: &'a GoldilocksExt2) {
-        *self = *self + *rhs;
-    }
-}
-
 impl Sub for GoldilocksExt2 {
     type Output = Self;
 
     #[inline]
     fn sub(self, rhs: Self) -> Self {
         Self([self.0[0] - rhs.0[0], self.0[1] - rhs.0[1]])
-    }
-}
-
-impl<'a> Sub<&'a GoldilocksExt2> for GoldilocksExt2 {
-    type Output = Self;
-
-    #[inline]
-    fn sub(self, rhs: &'a GoldilocksExt2) -> Self::Output {
-        self - *rhs
-    }
-}
-
-impl SubAssign for GoldilocksExt2 {
-    #[inline]
-    fn sub_assign(&mut self, rhs: Self) {
-        *self = *self - rhs;
-    }
-}
-
-impl<'a> SubAssign<&'a GoldilocksExt2> for GoldilocksExt2 {
-    #[inline]
-    fn sub_assign(&mut self, rhs: &'a GoldilocksExt2) {
-        *self = *self - *rhs;
-    }
-}
-
-impl<T: ::core::borrow::Borrow<GoldilocksExt2>> Sum<T> for GoldilocksExt2 {
-    fn sum<I: Iterator<Item = T>>(iter: I) -> Self {
-        iter.fold(Self::ZERO, |acc, item| acc + item.borrow())
-    }
-}
-
-impl Mul for GoldilocksExt2 {
-    type Output = Self;
-
-    #[inline]
-    fn mul(self, rhs: Self) -> Self {
-        mul_internal(&self, &rhs)
-    }
-}
-
-impl<'a> Mul<&'a GoldilocksExt2> for GoldilocksExt2 {
-    type Output = Self;
-
-    #[inline]
-    fn mul(self, rhs: &'a GoldilocksExt2) -> Self::Output {
-        self * *rhs
-    }
-}
-
-impl MulAssign for GoldilocksExt2 {
-    #[inline]
-    fn mul_assign(&mut self, rhs: Self) {
-        *self = *self * rhs;
-    }
-}
-
-impl<'a> MulAssign<&'a GoldilocksExt2> for GoldilocksExt2 {
-    #[inline]
-    fn mul_assign(&mut self, rhs: &'a GoldilocksExt2) {
-        *self = *self * *rhs;
-    }
-}
-
-impl<T: ::core::borrow::Borrow<GoldilocksExt2>> Product<T> for GoldilocksExt2 {
-    fn product<I: Iterator<Item = T>>(iter: I) -> Self {
-        iter.fold(Self::ONE, |acc, item| acc * item.borrow())
     }
 }
 
@@ -259,12 +171,6 @@ impl AsRef<[u8]> for GoldilocksExt2 {
 impl From<Goldilocks> for GoldilocksExt2 {
     fn from(a: Goldilocks) -> Self {
         Self([a, Goldilocks::ZERO])
-    }
-}
-
-impl From<u64> for GoldilocksExt2 {
-    fn from(a: u64) -> Self {
-        Goldilocks::from(a).into()
     }
 }
 

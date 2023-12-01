@@ -6,6 +6,8 @@ pub use fp::Goldilocks;
 pub use fp2::GoldilocksExt2;
 pub use fp3::GoldilocksExt3;
 
+#[macro_use]
+mod derive;
 mod field;
 mod fp;
 mod fp2;

@@ -3,9 +3,12 @@ use crate::util::{assume, try_inverse_u64};
 use core::iter::{Product, Sum};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use ff::{Field, FromUniformBytes, PrimeField};
+use halo2curves::serde::SerdeObject;
+use itertools::Itertools;
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
+use std::io::{Read, Write};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 /// Goldilocks field with modulus 2^64 - 2^32 + 1.
@@ -14,6 +17,91 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 /// For unique representation of its form, use `to_canonical_u64`
 #[derive(Clone, Copy, Debug, Default, Eq, Serialize, Deserialize)]
 pub struct Goldilocks(pub(crate) u64);
+
+impl Goldilocks {
+    pub fn bytes_to_field_elements(bytes: &[u8]) -> Vec<Self> {
+        bytes
+            .chunks(8)
+            .map(|chunk| Self::from_raw_bytes_unchecked(chunk))
+            .collect::<Vec<_>>()
+    }
+}
+
+impl SerdeObject for Goldilocks {
+    /// The purpose of unchecked functions is to read the internal memory representation
+    /// of a type from bytes as quickly as possible. No sanitization checks are performed
+    /// to ensure the bytes represent a valid object. As such this function should only be
+    /// used internally as an extension of machine memory. It should not be used to deserialize
+    /// externally provided data.
+    fn from_raw_bytes_unchecked(bytes: &[u8]) -> Self {
+        let mut tmp = u64::from_le_bytes(
+            bytes
+                .iter()
+                .pad_using(8, |_| &0u8)
+                .take(8)
+                .cloned()
+                .collect::<Vec<u8>>()
+                .try_into()
+                .unwrap(),
+        );
+        if tmp >= MODULUS {
+            tmp -= MODULUS
+        }
+
+        Self(tmp)
+    }
+    fn from_raw_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() > 8 {
+            return None;
+        }
+
+        let tmp = u64::from_le_bytes(
+            bytes
+                .iter()
+                .pad_using(8, |_| &0u8)
+                .take(8)
+                .cloned()
+                .collect::<Vec<u8>>()
+                .try_into()
+                .unwrap(),
+        );
+        if tmp >= MODULUS {
+            None
+        } else {
+            Some(tmp.into())
+        }
+    }
+
+    fn to_raw_bytes(&self) -> Vec<u8> {
+        self.0.to_le_bytes().to_vec()
+    }
+
+    /// The purpose of unchecked functions is to read the internal memory representation
+    /// of a type from disk as quickly as possible. No sanitization checks are performed
+    /// to ensure the bytes represent a valid object. This function should only be used
+    /// internally when some machine state cannot be kept in memory (e.g., between runs)
+    /// and needs to be reloaded as quickly as possible.
+    fn read_raw_unchecked<R: Read>(reader: &mut R) -> Self {
+        let mut buf = [0u8; 8];
+        reader.read_exact(&mut buf).unwrap();
+        Self(u64::from_le_bytes(buf))
+    }
+    fn read_raw<R: Read>(reader: &mut R) -> std::io::Result<Self> {
+        let mut buf = [0u8; 8];
+        reader.read_exact(&mut buf)?;
+        let tmp = u64::from_le_bytes(buf);
+        if tmp >= MODULUS {
+            // todo: wrap the error
+            panic!("Not a field element")
+        } else {
+            Ok(tmp.into())
+        }
+    }
+
+    fn write_raw<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        writer.write_all(self.as_ref())
+    }
+}
 
 impl PartialEq for Goldilocks {
     fn eq(&self, other: &Goldilocks) -> bool {
@@ -240,7 +328,11 @@ impl PrimeField for Goldilocks {
 
 impl From<u64> for Goldilocks {
     fn from(input: u64) -> Self {
-        Self(input)
+        Self(if input >= MODULUS {
+            input - MODULUS
+        } else {
+            input
+        })
     }
 }
 
@@ -433,7 +525,7 @@ fn reduce128(x: u128) -> Goldilocks {
 
 impl Goldilocks {
     #[inline]
-    pub fn to_canonical_u64(self) -> u64 {
+    pub fn to_canonical_u64(&self) -> u64 {
         let mut c = self.0;
         // We only need one condition subtraction, since 2 * ORDER would not fit in a u64.
         if c >= MODULUS {

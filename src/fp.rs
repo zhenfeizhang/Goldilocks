@@ -18,15 +18,6 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 #[derive(Clone, Copy, Debug, Default, Eq, Serialize, Deserialize)]
 pub struct Goldilocks(pub(crate) u64);
 
-impl Goldilocks {
-    pub fn bytes_to_field_elements(bytes: &[u8]) -> Vec<Self> {
-        bytes
-            .chunks(8)
-            .map(|chunk| Self::from_raw_bytes_unchecked(chunk))
-            .collect::<Vec<_>>()
-    }
-}
-
 impl SerdeObject for Goldilocks {
     /// The purpose of unchecked functions is to read the internal memory representation
     /// of a type from bytes as quickly as possible. No sanitization checks are performed
@@ -50,11 +41,11 @@ impl SerdeObject for Goldilocks {
 
         Self(tmp)
     }
+
     fn from_raw_bytes(bytes: &[u8]) -> Option<Self> {
         if bytes.len() > 8 {
             return None;
         }
-
         let tmp = u64::from_le_bytes(
             bytes
                 .iter()

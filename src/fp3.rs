@@ -1,12 +1,16 @@
 //! This module implements Goldilocks cubic extension field mod x^3-x-1
 
-use crate::Goldilocks;
 use core::iter::{Product, Sum};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use ff::{Field, PrimeField};
+use halo2curves::serde::SerdeObject;
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+
+use crate::field::SmallField;
+use crate::Goldilocks;
 
 /// Degree 3 Goldilocks extension field mod x^3-x-1
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -39,15 +43,70 @@ fn mul_internal(a: &GoldilocksExt3, b: &GoldilocksExt3) -> GoldilocksExt3 {
 
 impl_extension_field!(Goldilocks, GoldilocksExt3, 3);
 
-// impl GoldilocksExt3 {
-//     fn to_canonical_u64_array(&self) -> [u64; 3] {
-//         [
-//             self.0[0].to_canonical_u64(),
-//             self.0[1].to_canonical_u64(),
-//             self.0[2].to_canonical_u64(),
-//         ]
-//     }
-// }
+impl SerdeObject for GoldilocksExt3 {
+    /// The purpose of unchecked functions is to read the internal memory representation
+    /// of a type from bytes as quickly as possible. No sanitization checks are performed
+    /// to ensure the bytes represent a valid object. As such this function should only be
+    /// used internally as an extension of machine memory. It should not be used to deserialize
+    /// externally provided data.
+    fn from_raw_bytes_unchecked(bytes: &[u8]) -> Self {
+        Self([
+            Goldilocks::from_raw_bytes_unchecked(bytes[..8].as_ref()),
+            Goldilocks::from_raw_bytes_unchecked(bytes[8..16].as_ref()),
+            Goldilocks::from_raw_bytes_unchecked(bytes[16..].as_ref()),
+        ])
+    }
+
+    fn from_raw_bytes(bytes: &[u8]) -> Option<Self> {
+        let a1 = match Goldilocks::from_raw_bytes(bytes[..8].as_ref()) {
+            Some(p) => p,
+            None => return None,
+        };
+        let a2 = match Goldilocks::from_raw_bytes(bytes[8..16].as_ref()) {
+            Some(p) => p,
+            None => return None,
+        };
+        let a3 = match Goldilocks::from_raw_bytes(bytes[16..].as_ref()) {
+            Some(p) => p,
+            None => return None,
+        };
+
+        Some(Self([a1, a2, a3]))
+    }
+
+    fn to_raw_bytes(&self) -> Vec<u8> {
+        [
+            self.0[0].to_raw_bytes(),
+            self.0[1].to_raw_bytes(),
+            self.0[2].to_raw_bytes(),
+        ]
+        .concat()
+    }
+
+    /// The purpose of unchecked functions is to read the internal memory representation
+    /// of a type from disk as quickly as possible. No sanitization checks are performed
+    /// to ensure the bytes represent a valid object. This function should only be used
+    /// internally when some machine state cannot be kept in memory (e.g., between runs)
+    /// and needs to be reloaded as quickly as possible.
+    fn read_raw_unchecked<R: Read>(reader: &mut R) -> Self {
+        let a1 = Goldilocks::read_raw_unchecked(reader);
+        let a2 = Goldilocks::read_raw_unchecked(reader);
+        let a3 = Goldilocks::read_raw_unchecked(reader);
+        Self([a1, a2, a3])
+    }
+    fn read_raw<R: Read>(reader: &mut R) -> std::io::Result<Self> {
+        let a1 = Goldilocks::read_raw(reader)?;
+        let a2 = Goldilocks::read_raw(reader)?;
+        let a3 = Goldilocks::read_raw(reader)?;
+        Ok(Self([a1, a2, a3]))
+    }
+
+    fn write_raw<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        self.0[0].write_raw(writer)?;
+        self.0[1].write_raw(writer)?;
+        self.0[2].write_raw(writer)
+    }
+}
 
 impl Field for GoldilocksExt3 {
     /// The zero element of the field, the additive identity.
@@ -129,12 +188,6 @@ impl ConditionallySelectable for GoldilocksExt3 {
     }
 }
 
-// impl ConstantTimeEq for GoldilocksExt3 {
-//     fn ct_eq(&self, other: &Self) -> Choice {
-//         self.to_canonical_u64_array()
-//             .ct_eq(&other.to_canonical_u64_array())
-//     }
-// }
 impl Neg for GoldilocksExt3 {
     type Output = Self;
 
@@ -156,29 +209,6 @@ impl Add for GoldilocksExt3 {
         ])
     }
 }
-
-// impl<'a> Add<&'a GoldilocksExt3> for GoldilocksExt3 {
-//     type Output = Self;
-
-//     #[inline]
-//     fn add(self, rhs: &'a GoldilocksExt3) -> Self::Output {
-//         self + *rhs
-//     }
-// }
-
-// impl AddAssign for GoldilocksExt3 {
-//     #[inline]
-//     fn add_assign(&mut self, rhs: Self) {
-//         *self = *self + rhs;
-//     }
-// }
-
-// impl<'a> AddAssign<&'a GoldilocksExt3> for GoldilocksExt3 {
-//     #[inline]
-//     fn add_assign(&mut self, rhs: &'a GoldilocksExt3) {
-//         *self = *self + *rhs;
-//     }
-// }
 
 impl Sub for GoldilocksExt3 {
     type Output = Self;

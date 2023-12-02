@@ -1,12 +1,16 @@
 //! This module implements Goldilocks quadratic extension field mod x^2 - 7
 
-use crate::Goldilocks;
 use core::iter::{Product, Sum};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use ff::{Field, PrimeField};
+use halo2curves::serde::SerdeObject;
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
+use std::io::{Read, Write};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+
+use crate::field::SmallField;
+use crate::Goldilocks;
 
 /// Degree 3 Goldilocks extension field mod x^2 - 7
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -33,11 +37,57 @@ fn mul_internal(a: &GoldilocksExt2, b: &GoldilocksExt2) -> GoldilocksExt2 {
 
 impl_extension_field!(Goldilocks, GoldilocksExt2, 2);
 
-// impl GoldilocksExt2 {
-//     fn to_canonical_u64_array(&self) -> [u64; 2] {
-//         [self.0[0].to_canonical_u64(), self.0[1].to_canonical_u64()]
-//     }
-// }
+impl SerdeObject for GoldilocksExt2 {
+    /// The purpose of unchecked functions is to read the internal memory representation
+    /// of a type from bytes as quickly as possible. No sanitization checks are performed
+    /// to ensure the bytes represent a valid object. As such this function should only be
+    /// used internally as an extension of machine memory. It should not be used to deserialize
+    /// externally provided data.
+    fn from_raw_bytes_unchecked(bytes: &[u8]) -> Self {
+        Self([
+            Goldilocks::from_raw_bytes_unchecked(bytes[..8].as_ref()),
+            Goldilocks::from_raw_bytes_unchecked(bytes[8..].as_ref()),
+        ])
+    }
+
+    fn from_raw_bytes(bytes: &[u8]) -> Option<Self> {
+        let a1 = match Goldilocks::from_raw_bytes(bytes[..8].as_ref()) {
+            Some(p) => p,
+            None => return None,
+        };
+        let a2 = match Goldilocks::from_raw_bytes(bytes[8..].as_ref()) {
+            Some(p) => p,
+            None => return None,
+        };
+
+        Some(Self([a1, a2]))
+    }
+
+    fn to_raw_bytes(&self) -> Vec<u8> {
+        [self.0[0].to_raw_bytes(), self.0[1].to_raw_bytes()].concat()
+    }
+
+    /// The purpose of unchecked functions is to read the internal memory representation
+    /// of a type from disk as quickly as possible. No sanitization checks are performed
+    /// to ensure the bytes represent a valid object. This function should only be used
+    /// internally when some machine state cannot be kept in memory (e.g., between runs)
+    /// and needs to be reloaded as quickly as possible.
+    fn read_raw_unchecked<R: Read>(reader: &mut R) -> Self {
+        let a1 = Goldilocks::read_raw_unchecked(reader);
+        let a2 = Goldilocks::read_raw_unchecked(reader);
+        Self([a1, a2])
+    }
+    fn read_raw<R: Read>(reader: &mut R) -> std::io::Result<Self> {
+        let a1 = Goldilocks::read_raw(reader)?;
+        let a2 = Goldilocks::read_raw(reader)?;
+        Ok(Self([a1, a2]))
+    }
+
+    fn write_raw<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        self.0[0].write_raw(writer)?;
+        self.0[1].write_raw(writer)
+    }
+}
 
 impl Field for GoldilocksExt2 {
     /// The zero element of the field, the additive identity.

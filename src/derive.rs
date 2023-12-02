@@ -1,15 +1,6 @@
 macro_rules! impl_extension_field {
     ($base_field:ident, $ext_field:ident, $degree: expr) => {
         impl $ext_field {
-            pub fn to_canonical_u64_array(&self) -> [u64; $degree] {
-                self.0
-                    .iter()
-                    .map(|a| a.to_canonical_u64())
-                    .collect::<Vec<u64>>()
-                    .try_into()
-                    .unwrap()
-            }
-
             pub fn new_from_base(base_elems: &[$base_field]) -> Self {
                 Self(base_elems.try_into().unwrap())
             }
@@ -17,8 +8,8 @@ macro_rules! impl_extension_field {
 
         impl ConstantTimeEq for $ext_field {
             fn ct_eq(&self, other: &Self) -> Choice {
-                self.to_canonical_u64_array()
-                    .ct_eq(&other.to_canonical_u64_array())
+                self.to_canonical_u64_vec()
+                    .ct_eq(&other.to_canonical_u64_vec())
             }
         }
 

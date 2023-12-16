@@ -124,6 +124,13 @@ impl FromUniformBytes<32> for Goldilocks {
     }
 }
 
+impl FromUniformBytes<16> for Goldilocks {
+    fn from_uniform_bytes(bytes: &[u8; 16]) -> Self {
+        // FIXME: this is also biased.
+        Goldilocks(u64::from_le_bytes(bytes[..8].try_into().unwrap()))
+    }
+}
+
 impl Field for Goldilocks {
     /// The zero element of the field, the additive identity.
     const ZERO: Self = Self(0);

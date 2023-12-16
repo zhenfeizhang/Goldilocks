@@ -2,7 +2,7 @@
 
 use core::iter::{Product, Sum};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use ff::{Field, PrimeField};
+use ff::{Field, FromUniformBytes, PrimeField};
 use halo2curves::serde::SerdeObject;
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
@@ -318,5 +318,18 @@ impl PrimeField for GoldilocksExt2 {
     /// Returns true iff this element is odd.
     fn is_odd(&self) -> Choice {
         unimplemented!()
+    }
+}
+
+impl FromUniformBytes<64> for GoldilocksExt2 {
+    fn from_uniform_bytes(bytes: &[u8; 64]) -> Self {
+        Self([
+            <Goldilocks as FromUniformBytes<32>>::from_uniform_bytes(
+                bytes[..32].try_into().unwrap(),
+            ),
+            <Goldilocks as FromUniformBytes<32>>::from_uniform_bytes(
+                bytes[32..].try_into().unwrap(),
+            ),
+        ])
     }
 }

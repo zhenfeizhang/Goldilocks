@@ -17,6 +17,8 @@ pub trait SmallField: PrimeField + Serialize + SerdeObject {
     fn to_canonical_u64_vec(&self) -> Vec<u64>;
     /// Convert self to limbs of Goldilocks elements
     fn to_limbs(&self) -> Vec<Goldilocks>;
+    /// Convert limbs into self
+    fn from_limbs(limbs: &[Goldilocks]) -> Self;
 }
 
 impl SmallField for Goldilocks {
@@ -36,6 +38,10 @@ impl SmallField for Goldilocks {
 
     fn to_limbs(&self) -> Vec<Goldilocks> {
         vec![*self]
+    }
+
+    fn from_limbs(limbs: &[Goldilocks]) -> Self {
+        limbs[0]
     }
 }
 impl SmallField for GoldilocksExt2 {
@@ -61,6 +67,10 @@ impl SmallField for GoldilocksExt2 {
     fn to_limbs(&self) -> Vec<Goldilocks> {
         self.0.to_vec()
     }
+
+    fn from_limbs(limbs: &[Goldilocks]) -> Self {
+        Self(limbs[..1].try_into().unwrap())
+    }
 }
 impl SmallField for GoldilocksExt3 {
     const DEGREE: usize = 3;
@@ -84,5 +94,9 @@ impl SmallField for GoldilocksExt3 {
 
     fn to_limbs(&self) -> Vec<Goldilocks> {
         self.0.to_vec()
+    }
+
+    fn from_limbs(limbs: &[Goldilocks]) -> Self {
+        Self(limbs[..2].try_into().unwrap())
     }
 }

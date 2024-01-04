@@ -1,12 +1,14 @@
 use super::random_field_tests;
+use super::random_inversion_tests;
 use super::random_prime_field_tests;
 use crate::fp::Goldilocks;
 use crate::fp2::GoldilocksExt2;
 
 #[test]
 fn test_field() {
-    random_field_tests::<GoldilocksExt2>("GoldilocksExt3".to_string());
-    random_prime_field_tests::<GoldilocksExt2>("GoldilocksExt3".to_string());
+    random_field_tests::<GoldilocksExt2>("GoldilocksExt2".to_string());
+    random_prime_field_tests::<GoldilocksExt2>("GoldilocksExt2".to_string());
+    random_inversion_tests::<GoldilocksExt2>("GoldilocksExt2".to_string());
 }
 
 #[test]

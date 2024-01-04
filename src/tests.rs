@@ -164,8 +164,12 @@ fn random_squaring_tests<F: Field, R: RngCore>(mut rng: R, type_name: String) {
     end_timer!(start);
 }
 
-#[allow(dead_code)]
-fn random_inversion_tests<F: Field, R: RngCore>(mut rng: R, type_name: String) {
+pub fn random_inversion_tests<F: Field>(type_name: String) {
+    let mut rng = XorShiftRng::from_seed([
+        0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06, 0xbc,
+        0xe5,
+    ]);
+
     assert!(bool::from(F::ZERO.invert().is_none()));
 
     let message = format!("inversion {}", type_name);

@@ -5,6 +5,7 @@ use rand_core::SeedableRng;
 use rand_xorshift::XorShiftRng;
 
 use super::random_field_tests;
+use super::random_inversion_tests;
 use super::random_prime_field_tests;
 use crate::fp::Goldilocks;
 use crate::fp::LegendreSymbol;
@@ -54,4 +55,5 @@ fn test_sqrt_fq() {
 fn test_field() {
     random_field_tests::<Goldilocks>("Goldilocks".to_string());
     random_prime_field_tests::<Goldilocks>("Goldilocks".to_string());
+    random_inversion_tests::<Goldilocks>("Goldilocks".to_string());
 }

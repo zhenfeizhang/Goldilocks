@@ -126,7 +126,21 @@ impl Field for GoldilocksExt2 {
     /// Computes the multiplicative inverse of this element,
     /// failing if the element is zero.
     fn invert(&self) -> CtOption<Self> {
-        unimplemented!()
+        if self.is_zero_vartime() {
+            return CtOption::new(Self::default(), (false as u8).into());
+        }
+
+        let a_pow_r_minus_1 = self.frobenius();
+        let a_pow_r = a_pow_r_minus_1 * *self;
+        debug_assert!(a_pow_r.0[1] == Goldilocks::ZERO);
+        let a_pow_r_inv = a_pow_r.0[0].invert().expect("inverse does not exist");
+
+        let res = [
+            a_pow_r_minus_1.0[0] * a_pow_r_inv,
+            a_pow_r_minus_1.0[1] * a_pow_r_inv,
+        ];
+
+        CtOption::new(Self(res), Choice::from(1))
     }
 
     /// Returns the square root of the field element, if it is
@@ -331,5 +345,41 @@ impl FromUniformBytes<64> for GoldilocksExt2 {
                 bytes[32..].try_into().unwrap(),
             ),
         ])
+    }
+}
+
+impl GoldilocksExt2 {
+    /// FrobeniusField automorphisms: x -> x^p, where p is the order of BaseField.
+    fn frobenius(&self) -> Self {
+        self.repeated_frobenius(1)
+    }
+
+    /// Repeated Frobenius automorphisms: x -> x^(p^count).
+    ///
+    /// Follows precomputation suggestion in Section 11.3.3 of the
+    /// Handbook of Elliptic and Hyperelliptic Curve Cryptography.
+    fn repeated_frobenius(&self, count: usize) -> Self {
+        if count == 0 {
+            return *self;
+        } else if count >= 2 {
+            // x |-> x^(p^D) is the identity, so x^(p^count) ==
+            // x^(p^(count % D))
+            return self.repeated_frobenius(count % 2);
+        }
+        let arr = self.0;
+
+        // z0 = DTH_ROOT^count = W^(k * count) where k = floor((p^D-1)/D)
+        let mut z0 = Goldilocks(18446744069414584320);
+        for _ in 1..count {
+            z0 *= Goldilocks(18446744069414584320);
+        }
+        let z0square = z0 * z0;
+
+        let mut res = [Goldilocks::ZERO; 2];
+
+        res[0] = arr[0] * z0;
+        res[1] = arr[1] * z0square;
+
+        Self(res)
     }
 }

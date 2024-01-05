@@ -1,6 +1,7 @@
 //! This module defines our customized field trait.
 
 use ff::Field;
+use ff::FromUniformBytes;
 use ff::PrimeField;
 use halo2curves::serde::SerdeObject;
 use rand_core::RngCore;
@@ -10,7 +11,7 @@ use crate::{fp2::GoldilocksExt2, Goldilocks, GoldilocksExt3};
 
 pub trait SmallField: PrimeField + Serialize + SerdeObject {
     /// Base field
-    type BaseField;
+    type BaseField: SmallField + FromUniformBytes<64>;
     /// Extension degree of the Field
     const DEGREE: usize;
     /// Identifier string

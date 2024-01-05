@@ -84,7 +84,7 @@ impl SmallField for GoldilocksExt2 {
     }
 
     fn from_limbs(limbs: &[Goldilocks]) -> Self {
-        Self(limbs[..1].try_into().unwrap())
+        Self([limbs[0], limbs[1]])
     }
 
     fn sample_base(mut rng: impl RngCore) -> Self {
@@ -118,7 +118,7 @@ impl SmallField for GoldilocksExt3 {
     }
 
     fn from_limbs(limbs: &[Goldilocks]) -> Self {
-        Self(limbs[..2].try_into().unwrap())
+        Self([limbs[0], limbs[1], limbs[2]])
     }
 
     fn sample_base(mut rng: impl RngCore) -> Self {

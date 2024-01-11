@@ -1,5 +1,6 @@
 use super::random_field_tests;
 use super::random_prime_field_tests;
+use super::random_small_field_tests;
 use crate::fp::Goldilocks;
 use crate::fp3::GoldilocksExt3;
 
@@ -7,6 +8,7 @@ use crate::fp3::GoldilocksExt3;
 fn test_field() {
     random_field_tests::<GoldilocksExt3>("GoldilocksExt3".to_string());
     random_prime_field_tests::<GoldilocksExt3>("GoldilocksExt3".to_string());
+    random_small_field_tests::<GoldilocksExt3>("GoldilocksExt3".to_string());
 }
 
 #[test]

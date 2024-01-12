@@ -383,3 +383,17 @@ impl GoldilocksExt2 {
         Self(res)
     }
 }
+
+impl TryInto<Goldilocks> for GoldilocksExt2 {
+    /// The type returned in the event of a conversion error.
+    type Error = &'static str;
+
+    /// Performs the conversion.
+    fn try_into(self) -> Result<Goldilocks, Self::Error> {
+        if self.0[1].is_zero_vartime() {
+            Ok(self.0[0])
+        } else {
+            Err("extension field is not zero")
+        }
+    }
+}

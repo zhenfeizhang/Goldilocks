@@ -369,3 +369,17 @@ impl FromUniformBytes<64> for GoldilocksExt3 {
         ])
     }
 }
+
+impl TryInto<Goldilocks> for GoldilocksExt3 {
+    /// The type returned in the event of a conversion error.
+    type Error = &'static str;
+
+    /// Performs the conversion.
+    fn try_into(self) -> Result<Goldilocks, Self::Error> {
+        if self.0[1].is_zero_vartime() && self.0[2].is_zero_vartime() {
+            Ok(self.0[0])
+        } else {
+            Err("extension field is not zero")
+        }
+    }
+}

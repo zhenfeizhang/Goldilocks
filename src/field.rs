@@ -26,6 +26,8 @@ pub trait SmallField: PrimeField + Serialize + SerdeObject {
     fn from_limbs(limbs: &[Self::BaseField]) -> Self;
     /// Sample a random over the base field
     fn sample_base(rng: impl RngCore) -> Self;
+    /// Build a self from a base element; pad ext with 0s.
+    fn from_base(b: &Self::BaseField) -> Self;
     /// Mul-assign self by a base field element
     fn mul_assign_base(&mut self, rhs: &Self::BaseField);
     /// Multiply self by a base field element
@@ -63,6 +65,9 @@ impl SmallField for Goldilocks {
 
     fn sample_base(mut rng: impl RngCore) -> Self {
         Self::random(&mut rng)
+    }
+    fn from_base(b: &Self::BaseField) -> Self {
+        *b
     }
 
     /// Mul-assign self by a base field element
@@ -104,6 +109,10 @@ impl SmallField for GoldilocksExt2 {
         Self::BaseField::random(&mut rng).into()
     }
 
+    fn from_base(b: &Self::BaseField) -> Self {
+        Self([*b, Goldilocks::ZERO])
+    }
+
     /// Mul-assign self by a base field element
     fn mul_assign_base(&mut self, rhs: &Self::BaseField) {
         self.0[0] *= rhs;
@@ -142,6 +151,10 @@ impl SmallField for GoldilocksExt3 {
 
     fn sample_base(mut rng: impl RngCore) -> Self {
         Self::BaseField::random(&mut rng).into()
+    }
+
+    fn from_base(b: &Self::BaseField) -> Self {
+        Self([*b, Goldilocks::ZERO, Goldilocks::ZERO])
     }
 
     /// Mul-assign self by a base field element

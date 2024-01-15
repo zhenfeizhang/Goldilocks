@@ -253,12 +253,12 @@ impl PrimeField for GoldilocksExt2 {
     const MODULUS: &'static str = "0xffffffff00000001";
 
     /// How many bits are needed to represent an element of this field.
-    const NUM_BITS: u32 = 64;
+    const NUM_BITS: u32 = 128;
 
     /// How many bits of information can be reliably stored in the field element.
     ///
     /// This is usually `Self::NUM_BITS - 1`.
-    const CAPACITY: u32 = 63;
+    const CAPACITY: u32 = 126;
 
     /// An integer `s` satisfying the equation `2^s * t = modulus - 1` with `t` odd.
     ///

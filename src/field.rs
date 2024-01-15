@@ -13,24 +13,34 @@ use crate::{fp2::GoldilocksExt2, Goldilocks, GoldilocksExt3};
 pub trait SmallField: Serialize + SerdeObject + FromUniformBytes<64> + Hash {
     /// Base field
     type BaseField: SmallField + FromUniformBytes<64>;
+
     /// Extension degree of the Field
     const DEGREE: usize;
+
     /// Identifier string
     const NAME: &'static str;
+
     /// Convert a byte string into a list of field elements
     fn bytes_to_field_elements(bytes: &[u8]) -> Vec<Self>;
+
     /// Convert a field elements to a u64 vector
     fn to_canonical_u64_vec(&self) -> Vec<u64>;
+
     /// Convert self to limbs of Goldilocks elements
     fn to_limbs(&self) -> Vec<Self::BaseField>;
+
     /// Convert limbs into self
     fn from_limbs(limbs: &[Self::BaseField]) -> Self;
+
     /// Sample a random over the base field
     fn sample_base(rng: impl RngCore) -> Self;
+
     /// Build a self from a base element; pad ext with 0s.
     fn from_base(b: &Self::BaseField) -> Self;
+
     /// Mul-assign self by a base field element
     fn mul_assign_base(&mut self, rhs: &Self::BaseField);
+
     /// Multiply self by a base field element
     fn mul_base(&self, rhs: &Self::BaseField) -> Self {
         let mut res = self.clone();

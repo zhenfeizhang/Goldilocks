@@ -2,18 +2,19 @@
 
 use core::iter::{Product, Sum};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::io::{Read, Write};
+
 use ff::{Field, FromUniformBytes, PrimeField};
 use halo2curves::serde::SerdeObject;
 use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
-use std::io::{Read, Write};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 use crate::field::SmallField;
 use crate::Goldilocks;
 
 /// Degree 3 Goldilocks extension field mod x^3-x-1
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub struct GoldilocksExt3(pub [Goldilocks; 3]);
 
 /// For a = (a1, a2, a3) and b = (b1, b2, b3)

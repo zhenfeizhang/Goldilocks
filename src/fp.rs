@@ -18,7 +18,7 @@ use crate::util::{assume, try_inverse_u64};
 /// where the value can be between 0 and 2^64.
 /// For unique representation of its form, use `to_canonical_u64`
 #[derive(Clone, Copy, Debug, Default, Eq, Serialize, Deserialize, Hash)]
-pub struct Goldilocks(pub(crate) u64);
+pub struct Goldilocks(pub u64);
 
 impl SerdeObject for Goldilocks {
     /// The purpose of unchecked functions is to read the internal memory representation

@@ -10,6 +10,7 @@ use rand_core::RngCore;
 use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
+use crate::field::SmallField;
 use crate::util::{add_no_canonicalize_trashing_input, branch_hint, split, sqrt_tonelli_shanks};
 use crate::util::{assume, try_inverse_u64};
 
@@ -525,13 +526,8 @@ fn reduce128(x: u128) -> Goldilocks {
 
 impl Goldilocks {
     #[inline]
-    pub fn to_canonical_u64(&self) -> u64 {
-        let mut c = self.0;
-        // We only need one condition subtraction, since 2 * ORDER would not fit in a u64.
-        if c >= MODULUS {
-            c -= MODULUS;
-        }
-        c
+    pub fn to_noncanonical_u64(&self) -> u64 {
+        self.0
     }
 
     pub const fn size() -> usize {

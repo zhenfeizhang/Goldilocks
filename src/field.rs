@@ -11,6 +11,9 @@ use serde::Serialize;
 use crate::{fp2::GoldilocksExt2, Goldilocks, GoldilocksExt3};
 
 pub trait SmallField: Serialize + SerdeObject + FromUniformBytes<64> + Hash {
+    /// MODULUS as u64
+    const MODULUS_U64: u64 = 0xFFFFFFFF00000001;
+
     /// Base field
     type BaseField: SmallField + FromUniformBytes<64>;
 
@@ -23,8 +26,23 @@ pub trait SmallField: Serialize + SerdeObject + FromUniformBytes<64> + Hash {
     /// Convert a byte string into a list of field elements
     fn bytes_to_field_elements(bytes: &[u8]) -> Vec<Self>;
 
+    /// Convert a field elements to a u64.
+    fn to_canonical_u64(&self) -> u64 {
+        // not supported
+        unimplemented!()
+    }
+
+    /// Convert a field elements to a u64. Do not normalize it.
+    fn to_noncanonical_u64(&self) -> u64 {
+        // not supported
+        unimplemented!()
+    }
+
     /// Convert a field elements to a u64 vector
     fn to_canonical_u64_vec(&self) -> Vec<u64>;
+
+    /// Convert a field elements to a u64 vector. Do not normalize it.
+    fn to_noncanonical_u64_vec(&self) -> Vec<u64>;
 
     /// Convert self to limbs of Goldilocks elements
     fn to_limbs(&self) -> Vec<Self::BaseField>;
@@ -62,8 +80,25 @@ impl SmallField for Goldilocks {
             .collect::<Vec<_>>()
     }
 
+    fn to_canonical_u64(&self) -> u64 {
+        let mut c = self.0;
+        // We only need one condition subtraction, since 2 * ORDER would not fit in a u64.
+        if c >= Self::MODULUS_U64 {
+            c -= Self::MODULUS_U64;
+        }
+        c
+    }
+
+    fn to_noncanonical_u64(&self) -> u64 {
+        self.0
+    }
+
     fn to_canonical_u64_vec(&self) -> Vec<u64> {
         vec![self.to_canonical_u64()]
+    }
+
+    fn to_noncanonical_u64_vec(&self) -> Vec<u64> {
+        vec![self.to_noncanonical_u64()]
     }
 
     fn to_limbs(&self) -> Vec<Goldilocks> {
@@ -104,8 +139,13 @@ impl SmallField for GoldilocksExt2 {
             .iter()
             .map(|a| a.to_canonical_u64())
             .collect::<Vec<u64>>()
-            .try_into()
-            .unwrap()
+    }
+
+    fn to_noncanonical_u64_vec(&self) -> Vec<u64> {
+        self.0
+            .iter()
+            .map(|a| a.to_noncanonical_u64())
+            .collect::<Vec<u64>>()
     }
 
     fn to_limbs(&self) -> Vec<Goldilocks> {
@@ -148,8 +188,13 @@ impl SmallField for GoldilocksExt3 {
             .iter()
             .map(|a| a.to_canonical_u64())
             .collect::<Vec<u64>>()
-            .try_into()
-            .unwrap()
+    }
+
+    fn to_noncanonical_u64_vec(&self) -> Vec<u64> {
+        self.0
+            .iter()
+            .map(|a| a.to_noncanonical_u64())
+            .collect::<Vec<u64>>()
     }
 
     fn to_limbs(&self) -> Vec<Goldilocks> {

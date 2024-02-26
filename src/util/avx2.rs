@@ -166,12 +166,12 @@ impl Avx2GoldilocksField {
     }
 
     #[inline]
-    fn as_slice(&self) -> &[Goldilocks] {
+    pub(crate) fn as_slice(&self) -> &[Goldilocks] {
         &self.0[..]
     }
 
     #[inline]
-    fn interleave(&self, other: Self, block_len: usize) -> (Self, Self) {
+    pub(crate) fn interleave(&self, other: Self, block_len: usize) -> (Self, Self) {
         let (v0, v1) = (self.get(), other.get());
         let (res0, res1) = match block_len {
             1 => unsafe { interleave1(v0, v1) },

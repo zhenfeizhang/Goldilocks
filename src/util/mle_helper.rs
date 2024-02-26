@@ -1,87 +1,59 @@
+use std::slice::from_raw_parts;
+
 use crate::{ExtensionField, Goldilocks, GoldilocksExt2};
 
 use super::avx2::Avx2GoldilocksField;
 
 pub trait EvalHelper: ExtensionField {
-    fn eval_helper(x: &Self, y: &Self, p: &Self) -> Self {
-        *p * (*y - *x) + x
+    fn eval_helper(x_and_y: &[Self], p: &Self) -> Self {
+        *p * (x_and_y[1] - x_and_y[0]) + x_and_y[0]
     }
 }
 
 impl EvalHelper for GoldilocksExt2 {
-    fn eval_helper(x: &Self, y: &Self, p: &Self) -> Self {
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    fn eval_helper(x_and_y: &[Self], p: &Self) -> Self {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64", target_feature = "avx2"))]
         {
-            eval_avx2(x, y, p)
+            eval_avx2(x_and_y, p)
         }
 
-        #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+        #[cfg(not(any(target_arch = "x86", target_arch = "x86_64", target_feature = "avx2")))]
         {
-            *p * (*y - *x) + x
+            *p * (x_and_y[1] - x_and_y[0]) + x_and_y[0]
         }
     }
 }
 
-fn eval_avx2<F: ExtensionField>(x: &F, y: &F, p: &F) -> F {
+fn eval_avx2(x_and_y: &[GoldilocksExt2], p: &GoldilocksExt2) -> GoldilocksExt2 {
     // =======================================
-    // WARNING: the following code is only tested for Ext2.
-    // It has not been tested for Ext3.
+    // WARNING: the following code supports only Ext2.
+    // It does not support Ext3.
     // =======================================
 
     // We want to compute p * (y - x) + x
     // which is (p0 + p1 X) * ( y0 - x0 + y1 X - x1 X) + (x0 + x1 X)
     // we compute two AVX2 MULs:
     //
-    // 1. r1 = p0 * [ y0,  -x0, y1, -x1]
-    // 2. r2 = p1 * [7y1, -7x1, y0, -x0]
-    // 3. r3 = r1 + r2
-    // 4. res = [r3[0] + r3[1] + x0, r3[2] + r3[3] + x1
-    //
-    // NOTE: further optimization may SIMD this `mul by 7` operation
+    // 1. r1 = [ x0, x1,  y0, y1 ] \circ [ -p0,  -p0, p0,  p0]
+    // 2. r2 = [ x0, x1,  y0, y1 ] \circ [ -p1, -7p1, p1, 7p1]
+    // 3. res[0] = r1[0] + r1[2] + r2[1] + r2[3] + x0
+    //    res[1] = r1[1] + r1[3] + r2[0] + r2[2] + x1
+    let neg_p0 = -p.0[0];
+    let neg_p1 = -p.0[1];
+    let seven_p1 = p.0[1] * Goldilocks(7);
+    let neg_seven_p1 = -seven_p1;
 
-    let seven = Goldilocks(7);
+    let x0_x1_y0_y1 = unsafe { from_raw_parts(x_and_y.as_ptr() as *const Goldilocks, 4) };
+    let x0_x1_y0_y1 = Avx2GoldilocksField::from_slice(x0_x1_y0_y1);
+    let p0_multiplicand = Avx2GoldilocksField([neg_p0, neg_p0, p.0[0], p.0[0]]);
+    let p1_multiplicand = Avx2GoldilocksField([neg_p1, neg_seven_p1, p.0[1], seven_p1]);
 
-    let x = x.as_non_canonical_u64_slice();
-    let y = y.as_non_canonical_u64_slice();
-    let p = p.as_non_canonical_u64_slice();
+    let r1 = *x0_x1_y0_y1 * p0_multiplicand;
+    let r2 = *x0_x1_y0_y1 * p1_multiplicand;
 
-    let first_part = {
-        // r1 = p0 * [ y0,  -x0, y1, -x1]
-        let x0_x1_neg_y0_neg_y1 = [
-            Goldilocks(y[0]),
-            -Goldilocks(x[0]),
-            Goldilocks(y[1]),
-            -Goldilocks(x[1]),
-        ];
-        let x0_x1_neg_y0_neg_y1 = Avx2GoldilocksField::from_slice(x0_x1_neg_y0_neg_y1.as_slice());
-
-        let p0 = Goldilocks::from(p[0]);
-
-        *x0_x1_neg_y0_neg_y1 * p0
-    };
-
-    let second_part = {
-        // 2. r2 = p1 * [7y1, -7x1, y0, -x0]
-        let x1_x0_neg_y1_neg_y0 = [
-            Goldilocks(y[1]) * seven,
-            -Goldilocks(x[1]) * seven,
-            Goldilocks(y[0]),
-            -Goldilocks(x[0]),
-        ];
-        let x1_x0_neg_y1_neg_y0 = Avx2GoldilocksField::from_slice(x1_x0_neg_y1_neg_y0.as_slice());
-
-        let p1 = Goldilocks::from(p[1]);
-
-        *x1_x0_neg_y1_neg_y0 * p1
-    };
-
-    // 3. r3 = r1 + r2
-    let r3 = (first_part + second_part).0;
-
-    // 4. res = [r3[0] + r3[1] + x0, r3[2] + r3[3] + x1
-    F::from_limbs(&[
-        F::BaseField::from((r3[0] + r3[1] + Goldilocks(x[0])).0),
-        F::BaseField::from((r3[2] + r3[3] + Goldilocks(x[1])).0),
+    GoldilocksExt2([
+        Goldilocks::sum_5(&r1.0[0], &r1.0[2], &r2.0[1], &r2.0[3], &x_and_y[0].0[0]),
+        Goldilocks::sum_5(&r1.0[1], &r1.0[3], &r2.0[0], &r2.0[2], &x_and_y[0].0[1]),
     ])
 }
 
@@ -98,7 +70,7 @@ mod test {
         let y = GoldilocksExt2([3.into(), 4.into()]);
         let p = GoldilocksExt2([5.into(), 6.into()]);
 
-        let res = eval_avx2(&x, &y, &p);
+        let res = eval_avx2(&[x, y], &p);
         let res2 = p * (y - x) + x;
         assert_eq!(res, res2);
 
@@ -108,7 +80,7 @@ mod test {
             let y = GoldilocksExt2::random(&mut rng);
             let p = GoldilocksExt2::random(&mut rng);
 
-            let res = eval_avx2(&x, &y, &p);
+            let res = eval_avx2(&[x, y], &p);
             let res2 = p * (y - x) + x;
             assert_eq!(res, res2);
         }

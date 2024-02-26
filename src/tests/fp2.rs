@@ -2,8 +2,8 @@ use super::random_field_tests;
 use super::random_inversion_tests;
 use super::random_prime_field_tests;
 use super::random_small_field_tests;
-use crate::fp::Goldilocks;
-use crate::fp2::GoldilocksExt2;
+use crate::Goldilocks;
+use crate::GoldilocksExt2;
 
 #[test]
 fn test_field() {

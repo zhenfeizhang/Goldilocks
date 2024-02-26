@@ -4,7 +4,7 @@ use std::hint::unreachable_unchecked;
 use ff::{Field, PrimeField};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-use crate::fp::{Goldilocks, MODULUS};
+use crate::{Goldilocks, MODULUS};
 
 #[inline(always)]
 pub fn assume(p: bool) {

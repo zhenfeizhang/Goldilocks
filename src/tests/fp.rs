@@ -1,6 +1,7 @@
 use std::ops::Neg;
 
 use ff::Field;
+use halo2curves::bn256::LegendreSymbol;
 use rand_core::SeedableRng;
 use rand_xorshift::XorShiftRng;
 
@@ -8,8 +9,7 @@ use super::random_field_tests;
 use super::random_inversion_tests;
 use super::random_prime_field_tests;
 use super::random_small_field_tests;
-use crate::fp::Goldilocks;
-use crate::fp::LegendreSymbol;
+use crate::Goldilocks;
 
 #[test]
 fn test_sqrt_fq() {

@@ -9,9 +9,9 @@ use rand_core::RngCore;
 use rand_core::SeedableRng;
 use rand_xorshift::XorShiftRng;
 
-use crate::SmallField;
+use crate::ExtensionField;
 
-pub fn random_small_field_tests<F: SmallField>(type_name: String) {
+pub fn random_small_field_tests<F: ExtensionField>(type_name: String) {
     let mut rng = XorShiftRng::from_seed([
         0x59, 0x62, 0xbe, 0x5d, 0x76, 0x3d, 0x31, 0x8d, 0x17, 0xdb, 0x37, 0x32, 0x54, 0x06, 0xbc,
         0xe5,

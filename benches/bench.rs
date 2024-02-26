@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use ff::Field;
-use goldilocks::{Goldilocks, GoldilocksExt2, GoldilocksExt3, SmallField};
+use goldilocks::{ExtensionField, Goldilocks, GoldilocksExt2, GoldilocksExt3, SmallField};
 use halo2curves::bn256::Fr;
 use rand_core::SeedableRng;
 use rand_xorshift::XorShiftRng;
@@ -12,7 +12,7 @@ criterion_main!(bench);
 criterion_group!(bench, bench_fields);
 
 fn bench_fields(c: &mut Criterion) {
-    bench_field::<Goldilocks>(c, Goldilocks::NAME);
+    bench_field::<Goldilocks>(c, <Goldilocks as SmallField>::NAME);
     bench_field::<GoldilocksExt2>(c, GoldilocksExt2::NAME);
     bench_field::<GoldilocksExt3>(c, GoldilocksExt3::NAME);
     bench_field::<Fr>(c, "Bn256 scalar")

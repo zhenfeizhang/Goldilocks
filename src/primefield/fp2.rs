@@ -2,21 +2,14 @@
 
 use core::iter::{Product, Sum};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use std::hash::Hash;
 use std::io::{Read, Write};
 
 use ff::{Field, FromUniformBytes, PrimeField};
 use halo2curves::serde::SerdeObject;
 use rand_core::RngCore;
-use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-use crate::field::SmallField;
-use crate::Goldilocks;
-
-/// Degree 3 Goldilocks extension field mod x^2 - 7
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, Hash)]
-pub struct GoldilocksExt2(pub [Goldilocks; 2]);
+use crate::{ExtensionField, Goldilocks, GoldilocksExt2};
 
 /// For a = (a1, a2) and b = (b1, b2)
 /// The multiplication is define as

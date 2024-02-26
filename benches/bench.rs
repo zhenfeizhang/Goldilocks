@@ -45,30 +45,73 @@ fn bench_sum_5(crit: &mut Criterion) {
 
 fn bench_avx2(c: &mut Criterion) {
     let mut rng = test_rng();
-    let x_and_y = (0..SIZE << 1)
-        .map(|_| GoldilocksExt2::random(&mut rng))
-        .collect::<Vec<_>>();
-    let z = (0..SIZE)
-        .map(|_| GoldilocksExt2::random(&mut rng))
-        .collect::<Vec<_>>();
 
-    let id = "eval non-avx2";
-    c.bench_function(id, |b| {
-        b.iter(|| {
-            black_box(x_and_y.chunks(2).zip(z.iter()).for_each(|(x_and_yi, zi)| {
-                let _ = *zi * (x_and_yi[1] - x_and_yi[0]) + x_and_yi[0];
-            }))
-        })
-    });
+    {
+        let x_and_y = (0..SIZE << 1)
+            .map(|_| GoldilocksExt2::random(&mut rng))
+            .collect::<Vec<_>>();
+        let z = (0..SIZE)
+            .map(|_| GoldilocksExt2::random(&mut rng))
+            .collect::<Vec<_>>();
 
-    let id = "eval avx2";
-    c.bench_function(id, |b| {
-        b.iter(|| {
-            black_box(x_and_y.chunks(2).zip(z.iter()).for_each(|(x_and_yi, zi)| {
-                let _ = <GoldilocksExt2 as EvalHelper>::eval_helper(x_and_yi, zi);
-            }))
-        })
-    });
+        let id = "eval single non-avx2";
+        c.bench_function(id, |b| {
+            b.iter(|| {
+                black_box(x_and_y.chunks(2).zip(z.iter()).for_each(|(x_and_yi, zi)| {
+                    let _ = *zi * (x_and_yi[1] - x_and_yi[0]) + x_and_yi[0];
+                }))
+            })
+        });
+
+        let id = "eval single avx2";
+        c.bench_function(id, |b| {
+            b.iter(|| {
+                black_box(x_and_y.chunks(2).zip(z.iter()).for_each(|(x_and_yi, zi)| {
+                    let _ = <GoldilocksExt2 as EvalHelper>::eval_helper(x_and_yi, zi);
+                }))
+            })
+        });
+    }
+
+    {
+        let x_and_y = (0..SIZE << 1)
+            .map(|_| {
+                (0..8)
+                    .map(|_| GoldilocksExt2::random(&mut rng))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        let z = (0..SIZE)
+            .map(|_| {
+                (0..4)
+                    .map(|_| GoldilocksExt2::random(&mut rng))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+
+        let id = "eval batch 4 non-avx2";
+        c.bench_function(id, |b| {
+            b.iter(|| {
+                black_box(x_and_y.iter().zip(z.iter()).for_each(|(x_and_ys, zis)| {
+                    x_and_ys
+                        .chunks(2)
+                        .zip(zis.iter())
+                        .for_each(|(x_and_y, &p)| {
+                            let _ = p * (x_and_y[1] - x_and_y[0]) + x_and_y[0];
+                        });
+                }))
+            })
+        });
+
+        let id = "eval batch 4  avx2";
+        c.bench_function(id, |b| {
+            b.iter(|| {
+                black_box(x_and_y.iter().zip(z.iter()).for_each(|(x_and_yi, zi)| {
+                    let _ = <GoldilocksExt2 as EvalHelper>::eval_helper_4(x_and_yi, zi);
+                }))
+            })
+        });
+    }
 }
 
 fn bench_fields(c: &mut Criterion) {

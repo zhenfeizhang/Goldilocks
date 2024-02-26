@@ -1,25 +1,23 @@
+//! Implementing Halo2's PrimeField for Goldilocks
+
 use core::iter::{Product, Sum};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::fmt::{Display, Formatter};
+use std::hash::{Hash, Hasher};
 use std::io::{Read, Write};
 
 use ff::{Field, FromUniformBytes, PrimeField};
+use halo2curves::bn256::LegendreSymbol;
 use halo2curves::serde::SerdeObject;
 use itertools::Itertools;
 use rand_core::RngCore;
-use serde::{Deserialize, Serialize};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-use crate::field::SmallField;
+// use crate::SmallField;
+use crate::smallfield::SmallField;
 use crate::util::{add_no_canonicalize_trashing_input, branch_hint, split, sqrt_tonelli_shanks};
 use crate::util::{assume, try_inverse_u64};
-
-/// Goldilocks field with modulus 2^64 - 2^32 + 1.
-/// A Goldilocks field may store a non-canonical form of the element
-/// where the value can be between 0 and 2^64.
-/// For unique representation of its form, use `to_canonical_u64`
-#[derive(Clone, Copy, Debug, Default, Eq, Serialize, Deserialize, Hash)]
-pub struct Goldilocks(pub u64);
+use crate::{Goldilocks, EPSILON, MODULUS};
 
 impl SerdeObject for Goldilocks {
     /// The purpose of unchecked functions is to read the internal memory representation
@@ -103,16 +101,19 @@ impl PartialEq for Goldilocks {
     }
 }
 
+impl Eq for Goldilocks {}
+
+impl Hash for Goldilocks {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.to_canonical_u64().hash(hasher);
+    }
+}
+
 impl Display for Goldilocks {
     fn fmt(&self, w: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(w, "{}", self.0)
     }
 }
-
-/// 2^64 - 2^32 + 1
-pub const MODULUS: u64 = 0xffffffff00000001;
-/// 2^32 - 1
-pub const EPSILON: u64 = 0xffffffff;
 
 impl FromUniformBytes<64> for Goldilocks {
     fn from_uniform_bytes(bytes: &[u8; 64]) -> Self {
@@ -547,11 +548,4 @@ impl Goldilocks {
             LegendreSymbol::QuadraticNonResidue
         }
     }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum LegendreSymbol {
-    Zero = 0,
-    QuadraticResidue = 1,
-    QuadraticNonResidue = -1,
 }

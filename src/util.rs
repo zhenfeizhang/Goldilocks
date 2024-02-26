@@ -6,6 +6,11 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 use crate::{Goldilocks, MODULUS};
 
+mod avx2;
+mod mle_helper;
+
+pub use mle_helper::EvalHelper;
+
 #[inline(always)]
 pub fn assume(p: bool) {
     debug_assert!(p);

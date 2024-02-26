@@ -1,6 +1,9 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use ark_std::test_rng;
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ff::Field;
-use goldilocks::{ExtensionField, Goldilocks, GoldilocksExt2, GoldilocksExt3, SmallField};
+use goldilocks::{
+    EvalHelper, ExtensionField, Goldilocks, GoldilocksExt2, GoldilocksExt3, SmallField,
+};
 use halo2curves::bn256::Fr;
 use rand_core::SeedableRng;
 use rand_xorshift::XorShiftRng;
@@ -9,7 +12,48 @@ const SIZE: usize = 1000;
 
 criterion_main!(bench);
 
-criterion_group!(bench, bench_fields);
+criterion_group!(bench, bench_avx2, bench_fields);
+
+fn bench_avx2(c: &mut Criterion) {
+    const REPEAT: usize = 100;
+
+    let mut rng = test_rng();
+    let x = (0..100)
+        .map(|_| GoldilocksExt2::random(&mut rng))
+        .collect::<Vec<_>>();
+    let y = (0..100)
+        .map(|_| GoldilocksExt2::random(&mut rng))
+        .collect::<Vec<_>>();
+    let z = (0..100)
+        .map(|_| GoldilocksExt2::random(&mut rng))
+        .collect::<Vec<_>>();
+
+    let id = "eval non-avx2";
+    c.bench_function(id, |b| {
+        b.iter(|| {
+            black_box(
+                x.iter()
+                    .zip(y.iter().zip(z.iter()))
+                    .for_each(|(xi, (yi, zi))| {
+                        let _ = *zi * (*yi - *xi) + xi;
+                    }),
+            )
+        })
+    });
+
+    let id = "eval avx2";
+    c.bench_function(id, |b| {
+        b.iter(|| {
+            black_box(
+                x.iter()
+                    .zip(y.iter().zip(z.iter()))
+                    .for_each(|(xi, (yi, zi))| {
+                        let _ = <GoldilocksExt2 as EvalHelper>::eval_helper(xi, yi, zi);
+                    }),
+            )
+        })
+    });
+}
 
 fn bench_fields(c: &mut Criterion) {
     bench_field::<Goldilocks>(c, <Goldilocks as SmallField>::NAME);

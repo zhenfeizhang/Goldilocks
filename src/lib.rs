@@ -15,6 +15,7 @@ mod util;
 pub use extfield::ExtensionField;
 pub use smallfield::SmallField;
 pub use structs::{Goldilocks, GoldilocksExt2, GoldilocksExt3, EPSILON, MODULUS};
+pub use util::EvalHelper;
 
 #[cfg(test)]
 mod tests;

@@ -549,3 +549,36 @@ impl Goldilocks {
         }
     }
 }
+const MULTIPLE_OF_EPSILON: [u64; 8] = [
+    0,
+    0xffffffff,
+    0x1fffffffe,
+    0x2fffffffd,
+    0x3fffffffc,
+    0x4fffffffb,
+    0x5fffffffa,
+    0x6fffffff9,
+];
+
+impl Goldilocks {
+    #[inline]
+    pub fn sum_5(
+        a: &Goldilocks,
+        b: &Goldilocks,
+        c: &Goldilocks,
+        d: &Goldilocks,
+        e: &Goldilocks,
+    ) -> Self {
+        let (sum, over_b) = a.0.overflowing_add(b.0);
+        let (sum, over_c) = sum.overflowing_add(c.0);
+        let (sum, over_d) = sum.overflowing_add(d.0);
+        let (sum, over_e) = sum.overflowing_add(e.0);
+        let over = over_b as u8 + over_c as u8 + over_d as u8 + over_e as u8;
+
+        let (mut sum, over) = sum.overflowing_add(MULTIPLE_OF_EPSILON[over as usize]);
+        if over {
+            sum += EPSILON; // Cannot overflow.
+        }
+        Self(sum)
+    }
+}
